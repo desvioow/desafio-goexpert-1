@@ -45,7 +45,7 @@ func (strategy *RedisPersistenceStrategy) Persist(key string, value interface{})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := strategy.client.Set(ctx, key, value, time.Minute).Err()
+	err := strategy.client.Set(ctx, key, value, time.Second).Err()
 	return err == nil, err
 }
 
