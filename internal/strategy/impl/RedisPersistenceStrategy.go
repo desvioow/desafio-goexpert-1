@@ -41,11 +41,11 @@ func (strategy *RedisPersistenceStrategy) Disconnect() error {
 	return nil
 }
 
-func (strategy *RedisPersistenceStrategy) Persist(key string, value interface{}, expiration time.Duration) (bool, error) {
+func (strategy *RedisPersistenceStrategy) Persist(key string, value interface{}) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := strategy.client.Set(ctx, key, value, expiration).Err()
+	err := strategy.client.Set(ctx, key, value, time.Minute).Err()
 	return err == nil, err
 }
 

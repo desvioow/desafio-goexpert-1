@@ -67,7 +67,7 @@ func TestPersist(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			success, err := strategy.Persist(tc.key, tc.value, time.Minute)
+			success, err := strategy.Persist(tc.key, tc.value)
 			if tc.valid {
 				assert.True(t, success)
 				assert.NoError(t, err)
@@ -83,8 +83,8 @@ func TestGet(t *testing.T) {
 	strategy := setupRedis(t)
 
 	// Set up initial data
-	strategy.Persist("key1", "value1", time.Minute)
-	strategy.Persist("key2", "value2", time.Minute)
+	strategy.Persist("key1", "value1")
+	strategy.Persist("key2", "value2")
 
 	tests := []struct {
 		name      string
