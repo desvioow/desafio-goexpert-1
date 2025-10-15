@@ -15,7 +15,7 @@ func main() {
 	config.Load()
 
 	redisStrategy := &impl.RedisPersistenceStrategy{
-		Host:     "localhost",
+		Host:     "redis",
 		Port:     6379,
 		Password: "",
 		DB:       0,

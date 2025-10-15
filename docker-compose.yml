@@ -1,6 +1,15 @@
 version: "3.8"
 
 services:
+  app:
+    build: .
+    container_name: go-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
   redis:
     image: redis:8.2.2-alpine
     container_name: redis
