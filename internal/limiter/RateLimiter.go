@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -64,7 +65,7 @@ func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 func checkIpLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 
 	ipLimit := config.AppConfig.IPLimitPerSecond
-	requestIp := r.RemoteAddr
+	requestIp := strings.Split(r.RemoteAddr, ":")[0]
 
 	currentCount, err := getCurrentTries(requestIp, rateLimiter.strategy)
 	if err != nil {

@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"desafio-goexpert-1/internal/config"
 	"fmt"
 	"time"
 
@@ -49,7 +50,8 @@ func (strategy *RedisPersistenceStrategy) Persist(key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	err = strategy.client.Expire(ctx, key, time.Second).Err()
+	expirationTime := time.Duration(config.AppConfig.RetryAfterSeconds) * time.Second
+	err = strategy.client.Expire(ctx, key, expirationTime).Err()
 	if err != nil {
 		return false, err
 	}

@@ -35,7 +35,7 @@ func checkRequestLimit(w http.ResponseWriter, r *http.Request, strategy strategy
 	}
 	if limited {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Retry-After", strconv.Itoa(config.AppConfig.RetryAfter))
+		w.Header().Set("Retry-After", strconv.Itoa(config.AppConfig.RetryAfterSeconds))
 		w.WriteHeader(http.StatusTooManyRequests)
 		w.Write([]byte(`{"message": "you have reached the maximum number of requests or actions allowed within a certain time frame"}`))
 		return true, nil

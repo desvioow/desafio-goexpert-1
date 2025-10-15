@@ -11,7 +11,7 @@ import (
 type Config struct {
 	IPLimitPerSecond    int
 	TokenLimitPerSecond int
-	RetryAfter          int
+	RetryAfterSeconds   int
 }
 
 var AppConfig *Config
@@ -33,16 +33,16 @@ func Load() {
 		tokenLimit = 100
 	}
 
-	retryAfter, err := strconv.Atoi(getEnv("RETRY_AFTER", "60"))
+	retryAfter, err := strconv.Atoi(getEnv("RETRY_AFTER_SECONDS", "60"))
 	if err != nil {
-		log.Printf("Invalid RETRY_AFTER, using default: %v", err)
+		log.Printf("Invalid RETRY_AFTER_SECONDS, using default: %v", err)
 		retryAfter = 60
 	}
 
 	AppConfig = &Config{
 		IPLimitPerSecond:    ipLimit,
 		TokenLimitPerSecond: tokenLimit,
-		RetryAfter:          retryAfter,
+		RetryAfterSeconds:   retryAfter,
 	}
 }
 
