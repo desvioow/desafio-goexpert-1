@@ -3,8 +3,10 @@ package limiter
 import (
 	"desafio-goexpert-1/internal/config"
 	"desafio-goexpert-1/internal/strategy"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func (rateLimiter *RateLimiter) NewRateLimiter(strategy strategy.PersistenceStrategyInterface) *RateLimiter {
@@ -40,16 +42,25 @@ func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 		}
 		if success {
 			tries, err := rateLimiter.strategy.Get(token)
-			if err != nil {
-				return false, err
+			var triesInt int
+
+			if triesStr, ok := tries.(string); ok {
+				triesInt, err = strconv.Atoi(triesStr)
+				if err != nil {
+					return false, fmt.Errorf("failed to convert tries to int: %v", err)
+				}
+			} else {
+				return false, fmt.Errorf("unexpected type for tries: %T", tries)
 			}
-			if tries.(int) >= tokenLimit {
+
+			if triesInt >= tokenLimit {
 				return true, nil
 			}
 		}
+	} else {
+		log.Printf("Token not found in request header.")
 	}
 
-	log.Printf("Token not found in request header.")
 	return false, nil
 }
 
@@ -68,12 +79,24 @@ func checkIpLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			if tries.(int) >= ipLimit {
+			var triesInt int
+
+			if triesStr, ok := tries.(string); ok {
+				triesInt, err = strconv.Atoi(triesStr)
+				if err != nil {
+					return false, fmt.Errorf("failed to convert tries to int: %v", err)
+				}
+			} else {
+				return false, fmt.Errorf("unexpected type for tries: %T", tries)
+			}
+
+			if triesInt >= ipLimit {
 				return true, nil
 			}
 		}
+	} else {
+		log.Printf("IP not found in request.")
 	}
 
-	log.Printf("IP not found in request.")
 	return false, nil
 }

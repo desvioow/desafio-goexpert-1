@@ -4,7 +4,6 @@ import (
 	"desafio-goexpert-1/internal/config"
 	"desafio-goexpert-1/internal/limiter"
 	"desafio-goexpert-1/internal/strategy"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,7 +12,6 @@ import (
 func RateLimiterMiddleware(strategy strategy.PersistenceStrategyInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Println("Hello from RateLimiterMiddleware")
 			limited, err := checkRequestLimit(w, r, strategy)
 			if err != nil {
 				return
