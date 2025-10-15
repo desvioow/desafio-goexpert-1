@@ -40,22 +40,23 @@ func (rateLimiter *RateLimiter) CheckLimit(w http.ResponseWriter, r *http.Reques
 
 func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 
-	tokenLimit := config.AppConfig.TokenLimitPerSecond
 	token := r.Header.Get("API_KEY")
+	tokenLimit := config.AppConfig.GetTokenLimit(token)
 
-	currentCount, err := getCurrentTries(token, rateLimiter.strategy)
-	if err != nil {
-		return false, err
-	}
-
-	if currentCount >= tokenLimit {
-		return true, nil
-	}
-
-	if token != "" {
-		_, err := rateLimiter.strategy.Persist(token)
+	if tokenLimit > 0 {
+		currentCount, err := getCurrentTries(token, rateLimiter.strategy)
 		if err != nil {
 			return false, err
+		}
+
+		if currentCount >= tokenLimit {
+			return true, nil
+		}
+
+		_, err = rateLimiter.strategy.Persist(token)
+		if err != nil {
+			return false, err
+
 		}
 	}
 
