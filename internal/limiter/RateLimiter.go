@@ -22,13 +22,17 @@ func (rateLimiter *RateLimiter) CheckLimit(w http.ResponseWriter, r *http.Reques
 		return false, err
 	}
 
+	if limitedByToken {
+		return true, nil
+	}
+
 	limitedByIP, err := checkIpLimit(r, rateLimiter)
 	if err != nil {
 		log.Printf("Error checking IP limit: %s", err)
 		return false, err
 	}
 
-	return limitedByIP || limitedByToken, err
+	return limitedByIP, err
 }
 
 func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
@@ -54,6 +58,7 @@ func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 			}
 
 			if triesInt >= tokenLimit {
+				log.Printf("Request with token: %s exceeded limit", token)
 				return true, nil
 			}
 		}
@@ -91,6 +96,7 @@ func checkIpLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 			}
 
 			if triesInt >= ipLimit {
+				log.Printf("Request with ip: %s exceeded limit", requestIp)
 				return true, nil
 			}
 		}

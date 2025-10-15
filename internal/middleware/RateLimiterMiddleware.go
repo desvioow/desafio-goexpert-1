@@ -14,10 +14,10 @@ func RateLimiterMiddleware(strategy strategy.PersistenceStrategyInterface) func(
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			limited, err := checkRequestLimit(w, r, strategy)
 			if err != nil {
+				log.Printf("Error checking request limit: %s", err)
 				return
 			}
 			if limited {
-				log.Printf("Rate limit exceeded for request: %s", r.URL.Path)
 				return
 			}
 			next.ServeHTTP(w, r)
