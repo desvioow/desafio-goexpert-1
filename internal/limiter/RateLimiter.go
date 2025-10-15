@@ -34,7 +34,19 @@ func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 	tokenLimit := config.AppConfig.TokenLimitPerSecond
 
 	if token := r.Header.Get("API_KEY"); token != "" {
-		return rateLimiter.strategy.IncrAndCheckLimit(token, tokenLimit)
+		success, err := rateLimiter.strategy.Persist(token)
+		if err != nil {
+			return false, err
+		}
+		if success {
+			tries, err := rateLimiter.strategy.Get(token)
+			if err != nil {
+				return false, err
+			}
+			if tries.(int) >= tokenLimit {
+				return true, nil
+			}
+		}
 	}
 
 	log.Printf("Token not found in request header.")
@@ -47,7 +59,19 @@ func checkIpLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 	requestIp := r.RemoteAddr
 
 	if requestIp != "" {
-		return rateLimiter.strategy.IncrAndCheckLimit(requestIp, ipLimit)
+		success, err := rateLimiter.strategy.Persist(requestIp)
+		if err != nil {
+			return false, err
+		}
+		if success {
+			tries, err := rateLimiter.strategy.Get(requestIp)
+			if err != nil {
+				return false, err
+			}
+			if tries.(int) >= ipLimit {
+				return true, nil
+			}
+		}
 	}
 
 	log.Printf("IP not found in request.")
