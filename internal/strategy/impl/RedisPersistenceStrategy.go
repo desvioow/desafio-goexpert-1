@@ -41,12 +41,20 @@ func (strategy *RedisPersistenceStrategy) Disconnect() error {
 	return nil
 }
 
-func (strategy *RedisPersistenceStrategy) Persist(key string, value interface{}) (bool, error) {
+func (strategy *RedisPersistenceStrategy) Persist(key string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := strategy.client.Set(ctx, key, value, time.Second).Err()
-	return err == nil, err
+	err := strategy.client.Incr(ctx, key).Err()
+	if err != nil {
+		return false, err
+	}
+	err = strategy.client.Expire(ctx, key, time.Second).Err()
+	if err != nil {
+		return false, err
+	}
+
+	return true, err
 }
 
 func (strategy *RedisPersistenceStrategy) Get(key string) (interface{}, error) {
@@ -54,4 +62,11 @@ func (strategy *RedisPersistenceStrategy) Get(key string) (interface{}, error) {
 	defer cancel()
 
 	return strategy.client.Get(ctx, key).Result()
+}
+
+func (strategy *RedisPersistenceStrategy) Delete(key string) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return strategy.client.Del(ctx, key).Result()
 }
