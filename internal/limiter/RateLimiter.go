@@ -3,10 +3,12 @@ package limiter
 import (
 	"desafio-goexpert-1/internal/config"
 	"desafio-goexpert-1/internal/strategy"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-redis/redis/v8"
 )
 
 func (rateLimiter *RateLimiter) NewRateLimiter(strategy strategy.PersistenceStrategyInterface) *RateLimiter {
@@ -38,32 +40,22 @@ func (rateLimiter *RateLimiter) CheckLimit(w http.ResponseWriter, r *http.Reques
 func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 
 	tokenLimit := config.AppConfig.TokenLimitPerSecond
+	token := r.Header.Get("API_KEY")
 
-	if token := r.Header.Get("API_KEY"); token != "" {
-		success, err := rateLimiter.strategy.Persist(token)
+	currentCount, err := getCurrentTries(token, rateLimiter.strategy)
+	if err != nil {
+		return false, err
+	}
+
+	if currentCount >= tokenLimit {
+		return true, nil
+	}
+
+	if token != "" {
+		_, err := rateLimiter.strategy.Persist(token)
 		if err != nil {
 			return false, err
 		}
-		if success {
-			tries, err := rateLimiter.strategy.Get(token)
-			var triesInt int
-
-			if triesStr, ok := tries.(string); ok {
-				triesInt, err = strconv.Atoi(triesStr)
-				if err != nil {
-					return false, fmt.Errorf("failed to convert tries to int: %v", err)
-				}
-			} else {
-				return false, fmt.Errorf("unexpected type for tries: %T", tries)
-			}
-
-			if triesInt >= tokenLimit {
-				log.Printf("Request with token: %s exceeded limit", token)
-				return true, nil
-			}
-		}
-	} else {
-		log.Printf("Token not found in request header.")
 	}
 
 	return false, nil
@@ -74,35 +66,41 @@ func checkIpLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
 	ipLimit := config.AppConfig.IPLimitPerSecond
 	requestIp := r.RemoteAddr
 
+	currentCount, err := getCurrentTries(requestIp, rateLimiter.strategy)
+	if err != nil {
+		return false, err
+	}
+
+	if currentCount >= ipLimit {
+		return true, nil
+	}
+
 	if requestIp != "" {
-		success, err := rateLimiter.strategy.Persist(requestIp)
+		_, err := rateLimiter.strategy.Persist(requestIp)
 		if err != nil {
 			return false, err
 		}
-		if success {
-			tries, err := rateLimiter.strategy.Get(requestIp)
-			if err != nil {
-				return false, err
-			}
-			var triesInt int
-
-			if triesStr, ok := tries.(string); ok {
-				triesInt, err = strconv.Atoi(triesStr)
-				if err != nil {
-					return false, fmt.Errorf("failed to convert tries to int: %v", err)
-				}
-			} else {
-				return false, fmt.Errorf("unexpected type for tries: %T", tries)
-			}
-
-			if triesInt >= ipLimit {
-				log.Printf("Request with ip: %s exceeded limit", requestIp)
-				return true, nil
-			}
-		}
-	} else {
-		log.Printf("IP not found in request.")
 	}
 
 	return false, nil
+}
+
+func getCurrentTries(key string, strategy strategy.PersistenceStrategyInterface) (int, error) {
+
+	tries, err := strategy.Get(key)
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	if triesStr, ok := tries.(string); ok {
+		triesInt, err := strconv.Atoi(triesStr)
+		if err != nil {
+			return 0, err
+		}
+		return triesInt, err
+	}
+
+	return 0, nil
 }

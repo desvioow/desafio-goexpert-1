@@ -33,5 +33,5 @@ func main() {
 }
 
 func httpHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello, world! Limit my / endpoint plz"))
+	w.Write([]byte("<h1>I am not limited yet, try overloading me with requests!</h1>"))
 }
