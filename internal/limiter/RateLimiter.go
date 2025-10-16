@@ -4,7 +4,6 @@ import (
 	"desafio-goexpert-1/internal/config"
 	"desafio-goexpert-1/internal/strategy"
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,23 +18,12 @@ func (rateLimiter *RateLimiter) NewRateLimiter(strategy strategy.PersistenceStra
 
 func (rateLimiter *RateLimiter) CheckLimit(w http.ResponseWriter, r *http.Request) (bool, error) {
 
-	limitedByToken, err := checkTokenLimit(r, rateLimiter)
-	if err != nil {
-		log.Printf("Error checking Token limit: %s", err)
-		return false, err
+	token := r.Header.Get("API_KEY")
+	if token != "" {
+		return checkTokenLimit(r, rateLimiter)
 	}
 
-	if limitedByToken {
-		return true, nil
-	}
-
-	limitedByIP, err := checkIpLimit(r, rateLimiter)
-	if err != nil {
-		log.Printf("Error checking IP limit: %s", err)
-		return false, err
-	}
-
-	return limitedByIP, err
+	return checkIpLimit(r, rateLimiter)
 }
 
 func checkTokenLimit(r *http.Request, rateLimiter *RateLimiter) (bool, error) {
