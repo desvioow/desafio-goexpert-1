@@ -21,10 +21,10 @@ type TokenConfig struct {
 }
 
 type Config struct {
-	IPLimitPerSecond           int
-	TokenConfigs               []TokenConfig
-	DefaultTokenLimitPerSecond int
-	RetryAfterSeconds          int
+	IPLimitPerSecond            int
+	TokenConfigs                []TokenConfig
+	FallbackTokenLimitPerSecond int
+	RetryAfterSeconds           int
 }
 
 var AppConfig *Config
@@ -46,10 +46,10 @@ func Load() {
 		"Invalid RETRY_AFTER_SECONDS",
 	)
 
-	defaultTokenLimit := safeParseInt(
-		getEnv("DEFAULT_TOKEN_RATE_PER_SECOND", "20"),
+	fallbackTokenLimit := safeParseInt(
+		getEnv("UNKNOWN_TOKEN_RATE_PER_SECOND", "20"),
 		20,
-		"Invalid DEFAULT_TOKEN_RATE_PER_SECOND",
+		"Invalid UNKNOWN_TOKEN_RATE_PER_SECOND",
 	)
 
 	tokens := []TokenConfig{
@@ -72,10 +72,10 @@ func Load() {
 	}
 
 	AppConfig = &Config{
-		IPLimitPerSecond:           ipLimit,
-		DefaultTokenLimitPerSecond: defaultTokenLimit,
-		RetryAfterSeconds:          retryAfter,
-		TokenConfigs:               tokens,
+		IPLimitPerSecond:            ipLimit,
+		FallbackTokenLimitPerSecond: fallbackTokenLimit,
+		RetryAfterSeconds:           retryAfter,
+		TokenConfigs:                tokens,
 	}
 }
 
@@ -107,5 +107,5 @@ func (c *Config) GetTokenLimit(token string) int {
 			return tc.Limit
 		}
 	}
-	return c.DefaultTokenLimitPerSecond
+	return c.FallbackTokenLimitPerSecond
 }
