@@ -21,6 +21,7 @@ type TokenConfig struct {
 }
 
 type Config struct {
+	RateWindow                  int
 	IPLimitPerSecond            int
 	TokenConfigs                []TokenConfig
 	FallbackTokenLimitPerSecond int
@@ -33,6 +34,10 @@ func Load() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found: %v", err)
 	}
+
+	rateWindow := safeParseInt(
+		getEnv("RATE_WINDOW", "1"),
+		1, "Invalid RATE_WINDOW")
 
 	ipLimit := safeParseInt(
 		getEnv("IP_LIMIT_PER_SECOND", "10"),
@@ -72,6 +77,7 @@ func Load() {
 	}
 
 	AppConfig = &Config{
+		RateWindow:                  rateWindow,
 		IPLimitPerSecond:            ipLimit,
 		FallbackTokenLimitPerSecond: fallbackTokenLimit,
 		RetryAfterSeconds:           retryAfter,

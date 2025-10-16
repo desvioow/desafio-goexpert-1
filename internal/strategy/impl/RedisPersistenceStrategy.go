@@ -46,16 +46,29 @@ func (strategy *RedisPersistenceStrategy) Persist(key string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := strategy.client.Incr(ctx, key).Err()
+	count, err := strategy.client.Incr(ctx, key).Result()
 	if err != nil {
 		return false, err
 	}
-	expirationTime := time.Duration(config.AppConfig.RetryAfterSeconds) * time.Second
-	err = strategy.client.Expire(ctx, key, expirationTime).Err()
-	if err != nil {
-		return false, err
+	if count == 1 {
+		expiresAt := time.Now().Add(time.Duration(config.AppConfig.RateWindow) * time.Second)
+		expirationErr := strategy.client.ExpireAt(ctx, key, expiresAt).Err()
+		if expirationErr != nil {
+			return false, expirationErr
+		}
 	}
 
+	return true, err
+}
+
+func (strategy *RedisPersistenceStrategy) ExpiresAt(key string, expiration time.Time) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := strategy.client.ExpireAt(ctx, key, expiration).Err()
+	if err != nil {
+		return false, err
+	}
 	return true, err
 }
 
@@ -64,6 +77,13 @@ func (strategy *RedisPersistenceStrategy) Get(key string) (interface{}, error) {
 	defer cancel()
 
 	return strategy.client.Get(ctx, key).Result()
+}
+
+func (strategy *RedisPersistenceStrategy) GetExpiration(key string) (time.Duration, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return strategy.client.TTL(ctx, key).Result()
 }
 
 func (strategy *RedisPersistenceStrategy) Delete(key string) (interface{}, error) {
