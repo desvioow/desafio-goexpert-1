@@ -143,3 +143,35 @@ func TestTokenPriorityOverIP(t *testing.T) {
 		assert.False(t, limited, fmt.Sprintf("Request %d with ultra token should not be limited", i+1))
 	}
 }
+
+// TestInvalidTokenFallbackToDefault - Teste de eficácia: Token inválido deve usar limite padrão
+func TestInvalidTokenFallbackToDefault(t *testing.T) {
+	config.Load()
+	redisStrategy := setupRedisStrategy(t)
+	defer redisStrategy.Disconnect()
+
+	rateLimiter := RateLimiter{strategy: redisStrategy}
+
+	invalidToken := "invalid-token-xyz"
+	cleanupKeys(redisStrategy, invalidToken)
+	defer cleanupKeys(redisStrategy, invalidToken)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("API_KEY", invalidToken)
+	req.RemoteAddr = "172.16.0.1:8080"
+	recorder := httptest.NewRecorder()
+
+	defaultLimit := config.AppConfig.FallbackTokenLimitPerSecond
+
+	// Requisições até o limite padrão devem passar
+	for i := 0; i < defaultLimit; i++ {
+		limited, err := rateLimiter.CheckLimit(recorder, req)
+		assert.NoError(t, err)
+		assert.False(t, limited, fmt.Sprintf("Invalid token request %d should use default limit", i+1))
+	}
+
+	// Próxima requisição deve ser limitada
+	limited, err := rateLimiter.CheckLimit(recorder, req)
+	assert.NoError(t, err)
+	assert.True(t, limited, "Request exceeding default token limit should be limited")
+}
