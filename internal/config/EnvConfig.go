@@ -20,7 +20,7 @@ type TokenConfig struct {
 	Limit int
 }
 
-type Config struct {
+type RateLimiterConfig struct {
 	RateWindow                  int
 	IPLimitPerSecond            int
 	TokenConfigs                []TokenConfig
@@ -28,13 +28,41 @@ type Config struct {
 	RetryAfterSeconds           int
 }
 
-var AppConfig *Config
+type DBConfig struct {
+	Host     string
+	Port     int
+	Password string
+	DB       int
+}
+
+var AppConfig *RateLimiterConfig
+var RedisConfig *DBConfig
 
 func Load() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found: %v", err)
 	}
 
+	loadRateLimiterConfig()
+	loadRedisConfig()
+}
+
+func loadRedisConfig() {
+
+	host := getEnv("REDIS_HOST", "localhost")
+	port := safeParseInt(getEnv("REDIS_PORT", "6379"), 6379, "Invalid REDIS_PORT")
+	password := getEnv("REDIS_PASSWORD", "")
+	db := safeParseInt(getEnv("REDIS_DB", "0"), 0, "Invalid REDIS_DB")
+
+	RedisConfig = &DBConfig{
+		Host:     host,
+		Port:     port,
+		Password: password,
+		DB:       db,
+	}
+}
+
+func loadRateLimiterConfig() {
 	rateWindow := safeParseInt(
 		getEnv("RATE_WINDOW", "1"),
 		1, "Invalid RATE_WINDOW")
@@ -76,7 +104,7 @@ func Load() {
 		},
 	}
 
-	AppConfig = &Config{
+	AppConfig = &RateLimiterConfig{
 		RateWindow:                  rateWindow,
 		IPLimitPerSecond:            ipLimit,
 		FallbackTokenLimitPerSecond: fallbackTokenLimit,
@@ -103,7 +131,7 @@ func getEnv(key string, defaultValue string) string {
 	return defaultValue
 }
 
-func (c *Config) GetTokenLimit(token string) int {
+func (c *RateLimiterConfig) GetTokenLimit(token string) int {
 
 	if token == "" {
 		return -1

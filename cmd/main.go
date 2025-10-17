@@ -15,10 +15,10 @@ func main() {
 	config.Load()
 
 	redisStrategy := &impl.RedisPersistenceStrategy{
-		Host:     "redis",
-		Port:     6379,
-		Password: "",
-		DB:       0,
+		Host:     config.RedisConfig.Host,
+		Port:     config.RedisConfig.Port,
+		Password: config.RedisConfig.Password,
+		DB:       config.RedisConfig.DB,
 	}
 	err := redisStrategy.Connect()
 	if err != nil {
