@@ -13,8 +13,6 @@ const (
 	ULTRA_TOKEN  = "ULTRA_TOKEN"
 )
 
-var validTokens = []string{NORMAL_TOKEN, ULTRA_TOKEN}
-
 type TokenConfig struct {
 	Token string
 	Limit int
@@ -39,8 +37,22 @@ var AppConfig *RateLimiterConfig
 var RedisConfig *DBConfig
 
 func Load() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+
+	pathToEnvFile := []string{
+		".env",
+		"../.env",
+		"../../.env",
+	}
+	var err error
+	for _, pathToEnv := range pathToEnvFile {
+		err = godotenv.Load(pathToEnv)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		log.Printf("Warning: No .env file found in searched locations: %v", err)
 	}
 
 	loadRateLimiterConfig()
